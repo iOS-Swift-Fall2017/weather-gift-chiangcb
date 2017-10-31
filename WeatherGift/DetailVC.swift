@@ -1,126 +1,150 @@
 //
-//  AppDelegate.swift
+//  DetailVC.swift
 //  WeatherGift
 //
-//  Created by Chris Chiang on 10/17/17.
-//  Copyright © 2017 cchiang. All rights reserved.
+//  Created by Christopher Chiang on 10/31/17.
+//  Copyright © 2017 Christopher Chiang. All rights reserved.
 //
+
 
 import UIKit
 import CoreLocation
 
 class DetailVC: UIViewController {
-    
+
     @IBOutlet weak var dateLabel: UILabel!
     @IBOutlet weak var locationLabel: UILabel!
     @IBOutlet weak var temperatureLabel: UILabel!
     @IBOutlet weak var summaryLabel: UILabel!
     @IBOutlet weak var currentImage: UIImageView!
+    @IBOutlet weak var tableView: UITableView!
     
     var currentPage = 0
     var locationsArray = [WeatherLocation]()
     var locationManager: CLLocationManager!
     var currentLocation: CLLocation!
     
-
     override func viewDidLoad() {
         super.viewDidLoad()
-        locationLabel.text = locationsArray[currentPage].name
-        dateLabel.text = locationsArray[currentPage].coordinates
+        tableView.delegate = self
+        tableView.dataSource = self
         if currentPage != 0 {
             self.locationsArray[currentPage].getWeather {
                 self.updateUserInterface()
             }
         }
     }
-    
+
     override func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
         if currentPage == 0 {
             getLocation()
         }
     }
-    
+
     func updateUserInterface() {
-        locationLabel.text = locationsArray[currentPage].name
-        dateLabel.text = locationsArray[currentPage].coordinates
-        temperatureLabel.text = locationsArray[currentPage].currentTemp
+        let location = locationsArray[currentPage]
+        locationLabel.text = location.name
+        let dateString = formatTimeForTimeZone(unixDate: location.currentTime, timeZone: location.timeZone)
+        dateLabel.text = dateString
+        temperatureLabel.text = location.currentTemp
+        summaryLabel.text = location.currentSummary
+        currentImage.image = UIImage(named: location.currentIcon)
+        tableView.reloadData()
+        
     }
+    
+    func formatTimeForTimeZone(unixDate: TimeInterval, timeZone: String) -> String {
+        let usableDate = Date(timeIntervalSince1970: unixDate)
+        let dateFormatter = DateFormatter()
+        dateFormatter.dateFormat = "EEEE, MMM dd, y"
+        dateFormatter.timeZone = TimeZone(identifier: timeZone)
+        let dateString = dateFormatter.string(from: usableDate)
+        return dateString
+    }
+
 }
 
-//Location Manager Extension
 extension DetailVC: CLLocationManagerDelegate {
     
     func getLocation() {
-        let status = CLLocationManager.authorizationStatus()
         locationManager = CLLocationManager()
         locationManager.delegate = self
-        handleLocationAuthorizationStatus(status: status)
     }
     
-    // Respond to authorization status
     func handleLocationAuthorizationStatus(status: CLAuthorizationStatus) {
         switch status {
         case .notDetermined:
             locationManager.requestWhenInUseAuthorization()
-        case .authorizedWhenInUse, .authorizedAlways:
-            locationManager.startUpdatingLocation()
+        case .authorizedAlways, .authorizedWhenInUse:
+            locationManager.requestLocation()
         case .denied:
-            if currentPage == 0 && self.view.window != nil {
-                showAlert(title: "User has not authorized location services", message: "Go to settings to enable location services in this app.")
-            }
+            print("Sorry - can't show location. User has not authorized it.")
         case .restricted:
-            showAlert(title: "Location Services Denied", message: "Parental controls might be restricting location use in this app.")
+            print("Access denied. Likely parental controls are restricting location services in this app.")
         }
     }
     
-    func showAlert(title: String, message: String) {
-        let alertController = UIAlertController(title: title, message: message, preferredStyle: .alert)
-        let defaultAction = UIAlertAction(title: "OK", style: .default, handler: nil)
-        alertController.addAction(defaultAction)
-        present(alertController, animated: true, completion: nil)
-    }
-    
-    // This function is called if status is changed. If so, handle the
-    //  status change
     func locationManager(_ manager: CLLocationManager, didChangeAuthorization status: CLAuthorizationStatus) {
         handleLocationAuthorizationStatus(status: status)
     }
     
     func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
-        
-        if currentPage == 0 && self.view.window != nil {
-            let geoCoder = CLGeocoder()
-            
-            currentLocation = locations.last
-            
-            let currentLat = "\(currentLocation.coordinate.latitude)"
-            let currentLong = "\(currentLocation.coordinate.longitude)"
-            
-            var place = ""
-            geoCoder.reverseGeocodeLocation(currentLocation, completionHandler: {placemarks, error in
+        currentLocation = locations.last
+        let geoCoder = CLGeocoder()
+        var place = ""
+        let currentLatitude = currentLocation.coordinate.latitude
+        let currentLongitude = currentLocation.coordinate.longitude
+        let currentCoordinates = "\(currentLatitude),\(currentLongitude)"
+        geoCoder.reverseGeocodeLocation(currentLocation, completionHandler:
+            {placemarks, error in
                 if placemarks != nil {
-                    let placemark = placemarks!.last
+                    let placemark = placemarks?.last
                     place = (placemark?.name)!
                 } else {
-                    print("Error retrieving place. Error code \(error)")
-                    place = "Unknown"
+                    print("Error retrieving place. Error Code: \(error!)")
+                    place = "Unknown Weather Location"
                 }
                 self.locationsArray[0].name = place
-                self.locationsArray[0].coordinates = currentLat + "," + currentLong
+                self.locationsArray[0].coordinates = currentCoordinates
                 self.locationsArray[0].getWeather {
                     self.updateUserInterface()
                 }
-            })
-            
-        }
-        locationManager.stopUpdatingLocation()
+        })
+}
+
+    func locationManager(_ manager: CLLocationManager, didFailWithError error: Error) {
+        print("Failed to get user location")
+}
+
+}
+
+extension DetailVC: UITableViewDataSource, UITableViewDelegate {
+    func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
+        return locationsArray[currentPage].dailyForecastArray.count
     }
     
-    func locationManager(_ manager: CLLocationManager, didFailWithError error: Error) {
-        print("Error getting location. Error code \(error)")
+    func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
+        let cell = tableView.dequeueReusableCell(withIdentifier: "DayWeatherCell", for: indexPath) as! DayWeatherCell
+        let dailyForecast = locationsArray[currentPage].dailyForecastArray[indexPath.row]
+        cell.update(with: dailyForecast, timeZone: locationsArray[currentPage].timeZone)
+        return cell
     }
+    
+    func tableView(_ tableView: UITableView, heightForRowAt indexPath: IndexPath) -> CGFloat {
+        return 80
+    }
+    
     
 }
+
+
+
+
+
+
+
+
+
 
 
