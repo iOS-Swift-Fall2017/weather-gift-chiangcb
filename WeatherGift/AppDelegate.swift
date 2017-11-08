@@ -2,8 +2,8 @@
 //  AppDelegate.swift
 //  WeatherGift
 //
-//  Created by Christopher Chiang on 10/31/17.
-//  Copyright © 2017 Christopher Chiang. All rights reserved.
+//  Created by Chris Chiang on 11/7/17.
+//  Copyright © 2017 cchiang. All rights reserved.
 //
 
 
@@ -11,13 +11,14 @@ import UIKit
 import GooglePlaces
 
 @UIApplicationMain
+
 class AppDelegate: UIResponder, UIApplicationDelegate {
 
     var window: UIWindow?
 
 
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplicationLaunchOptionsKey: Any]?) -> Bool {
-        GMSPlacesClient.provideAPIKey("AIzaSyCmn6b5zgwPMG3Ozchwbh2J5SB3_yp29vM")
+        GMSPlacesClient.provideAPIKey("AIzaSyA9VFcDetXoOYpHyhi7FXSMuaPAvkqeZPA")
         return true
     }
 

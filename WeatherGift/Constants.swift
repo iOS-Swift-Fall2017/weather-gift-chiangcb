@@ -1,16 +1,13 @@
 //
-//  constants.swift
+//  Constants.swift
 //  WeatherGift
 //
-//  Created by Christopher Chiang on 10/31/17.
-//  Copyright © 2017 Christopher Chiang. All rights reserved.
+//  Created by Chris Chiang on 11/7/17.
+//  Copyright © 2017 cchiang. All rights reserved.
 //
 
 import Foundation
 
-
 let urlBase = "https://api.darksky.net/forecast/"
-
-let urlAPIKey = "c6c2f1ed181bec79c22a90299e5da188/"
-let coordinates = "37.8267,-122.4233"
-
+let urlAPIKey = "2daa5d91504bdad98b67e9273b5faca2/"
+let coordinates = "42.3355, -71.168648"
