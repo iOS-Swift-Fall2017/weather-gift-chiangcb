@@ -2,8 +2,8 @@
 //  HourlyWeatherCell.swift
 //  WeatherGift
 //
-//  Created by Chris Chiang on 11/7/17.
-//  Copyright © 2017 cchiang. All rights reserved.
+//  Created by Chris Chiang on 10/31/17.
+//  Copyright © 2017 Chris Chiang. All rights reserved.
 //
 
 import UIKit
